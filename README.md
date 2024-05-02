@@ -86,7 +86,7 @@ Scripts used:
 
 * [playlistmanager.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/playlistmanager.lua) —
   [source](https://github.com/jonniek/mpv-playlistmanager)\
-  Allows you to see and interact with your paylist in an intuitive way.
+  Allows you to see and interact with your playlist in an intuitive way.
 
 * [seek-to.lua](https://github.com/noelsimbolon/mpv-config/blob/linux/scripts/seek-to.lua) —
   [source](https://github.com/dexeonify/mpv-config/blob/main/scripts/seek-to.lua)\

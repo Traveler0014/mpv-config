@@ -1,5 +1,3 @@
-// SSimDownscaler by Shiandow
-//
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
 // License as published by the Free Software Foundation; either
@@ -14,8 +12,8 @@
 // License along with this library.
 
 //!HOOK POSTKERNEL
-//!BIND HOOKED
 //!BIND PREKERNEL
+//!BIND HOOKED
 //!SAVE L2
 //!WIDTH NATIVE_CROPPED.w
 //!WHEN NATIVE_CROPPED.h POSTKERNEL.h >
@@ -45,7 +43,8 @@ vec4 hook() {
         float rel = (pos[axis] - base[axis])*POSTKERNEL_size[axis];
         float w = Kernel(rel);
 
-        avg += w * pow(textureLod(PREKERNEL_raw, pos, 0.0) * PREKERNEL_mul, vec4(2.0));
+        vec4 tex = textureLod(PREKERNEL_raw, pos, 0.0) * PREKERNEL_mul;
+        avg += w * tex * tex;
         W += w;
     }
     avg /= W;
@@ -54,8 +53,8 @@ vec4 hook() {
 }
 
 //!HOOK POSTKERNEL
-//!BIND HOOKED
 //!BIND L2
+//!BIND HOOKED
 //!SAVE L2
 //!WHEN NATIVE_CROPPED.w POSTKERNEL.w >
 //!COMPONENTS 3
@@ -98,7 +97,9 @@ vec4 hook() {
 //!COMPONENTS 4
 //!DESC SSimDownscaler mean & R
 
-#define sigma_nsq   49. / (255.*255.)
+#define oversharp   0.0
+
+#define sigma_nsq   10. / (255.*255.)
 #define locality    2.0
 
 #define offset      vec2(0,0)
@@ -148,9 +149,9 @@ vec4 hook() {
     }
     avg /= W;
 
-    float Sl = Luma(max(avg[1] - avg[0] * avg[0], 0.)) + sigma_nsq;
-    float Sh = Luma(max(avg[2] - avg[0] * avg[0], 0.)) + sigma_nsq;
-    return vec4(avg[0], sqrt(Sh / Sl));
+    float Sl = Luma(max(avg[1] - avg[0] * avg[0], 0.));
+    float Sh = Luma(max(avg[2] - avg[0] * avg[0], 0.));
+    return vec4(avg[0], mix(sqrt((Sh + sigma_nsq) / (Sl + sigma_nsq)) * (1. + oversharp), clamp(Sh / Sl, 0., 1.), int(Sl > Sh)));
 }
 
 //!HOOK POSTKERNEL

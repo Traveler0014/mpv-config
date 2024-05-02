@@ -21,7 +21,9 @@ This repo contains my personal mpv configurations and scripts that I use and are
 Here are the steps to install mpv and to use my configuration files on Windows:
 * Download the latest 64bit mpv Windows build by shinchiro from [mpv.io/installation](https://mpv.io/installation/) or directly from [here](https://sourceforge.net/projects/mpv-player-windows/files/) and extract it wherever you please. This is now your mpv folder
 * Run `mpv-install.bat`, which is located in `installer` folder, with administrator priviledges by right-clicking and selecting Run as administrator
-* Download the `mpv-config-windows.zip` file from this repo's [latest release](https://github.com/noelsimbolon/mpv-config/releases/latest) and extract it to your mpv folder. Make sure the configuration folder name is `portable_config` (**this is important**) and is located at the same directory as `mpv.exe`
+* Download this repository as a ZIP file (or you can clone it using git)
+* Create a folder named `portable_config` (**this is important**), located at the same directory as `mpv.exe`
+* Extract or copy the contents of this repository that you have downloaded to the `portable_config` folder
 * To make some scripts work, you need to modify them from the release a little bit:
   * In order for the `mpv-gif.lua` script to work, it requires [FFmpeg](https://ffmpeg.org/) with libass enabled and accessible via terminal. See the [installation instructions](https://github.com/Scheliux/mpv-gif-generator#installation) from the script's source repository for further info.
   * **(Optional)** By default, the `mpv-gif.lua` script saves GIFs to `C:/Program Files/mpv/gifs`. To modify this, open `gif.conf`, which is located in `portable_config/script-opts` folder, with a text editor and specify the `dir`, which is output directory for GIFs, as you please. For example `dir="C:/Users/USERNAME/Pictures/mpv-gifs"`.
@@ -45,7 +47,7 @@ Here are the steps to install mpv and to use my configuration files on Linux:
 
   If you use other Linux distributions, please refer to the documentation of your Linux distribution's package manager on how to install packages.
 
-* Download the `mpv-config-linux.zip` file from this repo's [latest release](https://github.com/noelsimbolon/mpv-config/releases/latest) and extract it to your standard mpv configuration directory which is `~/.config/mpv`
+* Download this repository as a ZIP file (or you can clone it using git) and extract/copy it to your standard mpv configuration directory which is `~/.config/mpv`
 * To make some scripts work, you need to modify them from the release a little bit:
   * In order for the `mpv-gif.lua` script to work, it requires [FFmpeg](https://ffmpeg.org/) with libass enabled and accessible via terminal. See the [installation instructions](https://github.com/Scheliux/mpv-gif-generator#installation) from the script's source repository for further info.
   * **(Optional)** By default, the `mpv-gif.lua` script saves GIFs to `~/Videos/mpv-gifs`. To modify this, open `gif.conf`, which is located in `portable_config/script-opts` folder, with a text editor and specify the `dir`, which is output directory for GIFs, as you please. For example `dir="~/Videos"`.

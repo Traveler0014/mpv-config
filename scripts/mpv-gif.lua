@@ -10,7 +10,7 @@ require 'mp.options'
 local msg = require 'mp.msg'
 
 local options = {
-    dir = "C:/Program Files/mpv/gifs",
+    dir = "C:/Users/zhouy/Pictures/screenshots/gifs",
     rez = 600,
     fps = 15,
 }

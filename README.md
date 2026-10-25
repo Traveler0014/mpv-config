@@ -9,6 +9,16 @@ a wide variety of media file formats, audio and video codecs, and subtitle types
 
 This repo contains my personal mpv configurations and scripts that I use and are significantly better than default mpv, VLC, and MPC. Before installing, please take your time to read this whole README as common issues can be easily solved by simply reading carefully.
 
+## Branches
+
+| Branch | 适用场景 |
+| --- | --- |
+| `windows` | Windows（`portable_config`） |
+| `linux` | 普通 Linux 桌面，独显/中高端集显，追求画质（`profile=high-quality` + `ewa_lanczossharp`） |
+| `linux-lowend` | **弱 iGPU 的 Linux 设备**（Intel Gemini Lake / UHD 600 一类，无独显）。关掉昂贵缩放器与 HDR 动态峰值检测，4K 源自动降级，见下节 |
+
+`linux-lowend` 是从 `linux` 拉出的独立分支，只针对弱硬件改 `mpv.conf`，脚本/字体/OSC 与 `linux` 分支保持一致。详见[低性能 Linux 设备](#低性能-linux-设备lowend-linux-分支)。
+
 
 ## Preview
 
@@ -53,6 +63,48 @@ Here are the steps to install mpv and to use my configuration files on Linux:
   * **(Optional)** By default, the `mpv-gif.lua` script saves GIFs to `~/Videos/mpv-gifs`. To modify this, open `gif.conf`, which is located in `portable_config/script-opts` folder, with a text editor and specify the `dir`, which is output directory for GIFs, as you please. For example `dir="~/Videos"`.
 * **(Optional)** Make your own mpv configuration. You can do that by modifying my configuration files and/or making your own from scratch or modifying others' configurations. Check out the [useful links](#useful-links) section for mpv configuration guides.
 * You're all set up.
+
+## 低性能 Linux 设备（`lowend-linux` 分支）
+
+面向没有独显、iGPU 只有个位数 EU 的机器（测试机：Intel Celeron N4120 + UHD Graphics 600，12 EU / 700MHz，输出 2560x1440@60 SDR）。
+
+### 改了什么
+
+| 选项 | `linux` | `linux-lowend` | 原因（实测每帧渲染成本，24fps 预算 41.7ms） |
+| --- | --- | --- | --- |
+| `profile=high-quality` | 开 | **删掉** | `gpu-hq` 会带上 `ewa_lanczossharp` + 线性光缩放 + 抗振铃，1080p→1440p 实测 **48-56ms/帧（p95 176ms）** |
+| `scale` / `cscale` / `dscale` | `ewa_lanczossharp` / `ewa_lanczossharp` / `mitchell` | `lanczos` / `bicubic` / `bilinear` | lanczos 只要 **1.9ms/帧** |
+| `correct-downscaling` `linear-downscaling` `sigmoid-upscaling` | 默认开 | 全部 `no` | 三者合计是 17.5ms→3.2ms 的差距 |
+| `scale-antiring` | `0.6` | `0` | 12EU 上性价比极低 |
+| `hwdec` | `vulkan` | `auto-safe`（本机解析为 `vaapi`） | 弱 iGPU 基本没有 Vulkan video decode；`vaapi` dmabuf 直通 17% CPU，`vaapi-copy` 要 29% |
+| `tone-mapping` / `hdr-compute-peak` | 默认 | `bt.2390` / **`no`** | 动态峰值检测多跑一遍直方图 pass：**72ms/帧**（4K HDR 掉到 14fps）；关掉后任何曲线都是 3.4-3.8ms |
+| `gpu-api` | `vulkan` | `opengl` | 实测 4K HDR 全屏：20% vs 23% CPU |
+| 4K 源 | — | `[4k-cheap]` 自动 profile 降级到 bilinear | 4K→1440p 默认 lanczos **120ms/帧**，bilinear 1.2ms |
+| `gpu-shader-cache-dir` | `~~/shaders/cache` | `~/.cache/mpv/shader-cache` | `~~` 是配置目录，NixOS 下是只读 store 路径 → 缓存写不进去，每次启动重编 shader |
+| `video-sync` | 默认 | 显式 `audio` | 4K 下 `display-resample` 会丢 15-20%（60Hz 的 16.7ms 窗口容不下 4K 的准备抖动） |
+
+### 实测结果
+
+| 素材 | 改之前 | 改之后 |
+| --- | --- | --- |
+| 1080p HEVC 10bit + 特效 ASS（23.976fps） | 丢 178/240 帧 | **0/1200 帧（50s）**，18% CPU |
+| 4K HEVC 10bit HDR REMUX（DTS-HD MA 5.1） | 丢 207/240 帧 | **0/1200 帧（50s）**，21% CPU |
+| 1080p AV1 10bit | — | 3/1200 帧，44% CPU（**无 AV1 硬解**，纯 dav1d 软解） |
+
+### 能力边界
+
+* 1080p H.264 / HEVC 8-10bit（含 60fps）：硬解轻松，余量很大。
+* 1080p HEVC 10bit 即使纯软解也有 96-111fps（约 4x 实时）。
+* 4K HEVC 10bit HDR：**必须硬解 + 本分支的缩放/HDR 设置**。硬解能力本身够（实测 4K HEVC Main10 解到 69fps），瓶颈是 GPU 着色器。
+* 1080p AV1：能放，但吃 44-51% CPU；4K AV1 不可用（约 12fps）。
+* 重特效字幕（大量 `\t`、`\clip`、`\blur`）是弱机另一个卡顿源：实测单行中文约 4ms/帧，带旋转/模糊的特效行 10-30ms/帧。
+
+### 使用提示
+
+* `gpu-shader-cache-dir` 指向的目录要存在（NixOS 下由 home-manager activation 建好）。
+* 23.976fps 素材在 60Hz 屏上是 3:2 抖动，想完全顺滑就把输出切到 `1920x1080@23.976`（例如 `niri msg output HDMI-A-1 mode "1920x1080@23.976"`），比开插帧划算。
+* 不要开 `interpolation=yes`：实测 1080p 已经会丢 14% 帧。
+* 外接 exFAT/网络盘顺序读 366MB/s 就够 4K REMUX，不必额外加 `cache=yes`（实测无收益）。
 
 ## Scripts
 
